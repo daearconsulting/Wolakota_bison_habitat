@@ -19,7 +19,7 @@ About **{far2:.0f}% of the region is more than 2 km (1.2 miles) from mapped wate
 :::
 """)
 else:
-    print(show.missing_note("water"))
+    print("::: {.callout-note}\n**Water maps temporarily unavailable.** The USGS hydrography service did not respond successfully during this build. No water map or distance estimate is shown. Other monitoring pages use their successfully retrieved data; water will be retried on the next refresh.\n:::")
 ```
 
 Buffalo need to drink every day, and they range farther from water than cattle typically do. Even so, land far from water tends to be grazed lightly while land near water gets heavy use. A map of distance to water shows where a herd is likely to spend its time and where a new water source would open up grass.

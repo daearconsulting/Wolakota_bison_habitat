@@ -83,7 +83,7 @@ Then rebuild the data.
 
 ## Data safeguards and analytical extent
 
-Builds now stage all outputs and promote them only after validation. Failed refreshes leave the previous processed directory intact. Partial rebuilds require an existing validated real build; they cannot convert preview data to real data. Publication requires every configured dataset, its listed files, valid observations, and current retrieval dates. Run `python -m unittest discover -s tests -v` for regression checks.
+Builds now stage all outputs and promote them only after validation. Failed refreshes leave the previous processed directory intact. Partial rebuilds require an existing validated real build; they cannot convert preview data to real data. Publication requires every essential dataset, its listed files, valid observations, and current retrieval dates. Optional water data must either pass the same checks or be explicitly marked unavailable with no retained water files. Run `python -m unittest discover -s tests -v` for regression checks.
 
 The fixed 2024 Annual NLCD mask includes classes 52 (shrub/scrub) and 71 (grassland/herbaceous). It excludes mapped cropland, hay/pasture, developed land, forest, water and wetlands. This is a conservative vegetation screen, not proof of native species, irrigation status or available grazing land. Historical RAP summaries describe the **same fixed-vintage eligible footprint**, not historical land-use change. The mask is sampled with nearest-neighbor resampling onto the analysis grid. `landcover.raster` can be a local GeoTIFF or a remote COG; its default is a NatCap mirror of the USGS/MRLC product. Update the year and source URL together if replacing it.
 
@@ -92,3 +92,8 @@ The fixed 2024 Annual NLCD mask includes classes 52 (shrub/scrub) and 71 (grassl
 Use the page's Print/Save PDF button or your browser's Print command. Print styling replaces interactive maps and charts with static figures; the herd calculator includes a static starting-assumptions table. Choose “Save as PDF” in the print dialog. This is a browser-generated PDF rather than a separate LaTeX build.
 
 For the tested direct package versions, use `python -m pip install -r requirements.txt -c constraints.txt` after activating the environment. The workflow pins Quarto 1.8.27. Transitive dependencies are still resolved by pip; this is not a fully locked environment.
+
+
+## Temporary USGS water outages
+
+Water is an optional dataset. A transient USGS server error (429, 500, 502, 503 or 504), connection failure, or timeout marks it `unavailable`, removes any partial water products, and allows publication of the other validated real datasets. The water page clearly states that maps and distance estimates are unavailable; the provenance table records the failure. Every full scheduled/manual refresh retries water. Invalid water geometry or other processing errors still fail the build. Preview data, missing essential datasets, and stale/invalid observations still block publication.

@@ -6,8 +6,9 @@ Usage (from the project folder, with the environment active):
     python scripts/build_data.py --demo     # made-up preview data, for checking layout only
     python scripts/build_data.py --only drought water   # rebuild selected pieces
 
-Each step is independent. If a data service is down, that step is marked
-"failed" in data/processed/manifest.json and the rest still run.
+Each step is independent. Essential data failures block publication. Temporary
+USGS water outages are recorded as "unavailable" and omitted; other validated
+real datasets can publish. Processing errors remain fatal.
 """
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import requests
 import geopandas as gpd  # noqa: E402
 
 from sitekit import fetch  # noqa: E402
@@ -67,12 +69,27 @@ def main() -> int:
             jobs[name]()
             print(f"{name}: ok")
         except Exception as exc:
-            record(manifest, name, status="failed", source="", url="", note=f"{type(exc).__name__}: {exc}")
-            print(f"{name}: FAILED ({exc})")
+            outage = isinstance(exc, (requests.Timeout, requests.ConnectionError)) or (
+                isinstance(exc, requests.HTTPError) and exc.response is not None
+                and exc.response.status_code in {429, 500, 502, 503, 504})
+            if name == "water" and outage:
+                # An unavailable external service must never reuse old/demo water products.
+                for filename in ("water_streams.geojson", "water_bodies.geojson", "water_distance_km.tif"):
+                    (PROCESSED / filename).unlink(missing_ok=True)
+                record(manifest, name, status="unavailable", source="USGS NHDPlus High Resolution",
+                       url="https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer",
+                       note=f"Service request failed; water omitted and will be retried on the next refresh. {type(exc).__name__}: {exc}")
+                print(f"water: UNAVAILABLE ({exc}); continuing without water maps")
+            else:
+                record(manifest, name, status="failed", source="", url="", note=f"{type(exc).__name__}: {exc}")
+                print(f"{name}: FAILED ({exc})")
         write_manifest(manifest)  # save progress after every step
 
     failed = [k for k, v in manifest["datasets"].items() if v["status"] == "failed"]
-    print("\nDone." + (f" Failed: {', '.join(failed)}" if failed else " All steps succeeded."))
+    print("\nDone." + (f" Failed: {', '.join(failed)}" if failed else " All required steps succeeded."))
+    unavailable = [k for k, v in manifest["datasets"].items() if v["status"] == "unavailable"]
+    if unavailable:
+        print("Unavailable and omitted: " + ", ".join(unavailable))
     print(f"Outputs are in {PROCESSED}")
     return 1 if failed else 0
 

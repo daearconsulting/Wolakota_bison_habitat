@@ -17,7 +17,8 @@ def validate(directory=PROCESSED, allow_demo=False):
     if manifest.get("mode") not in ({"real", "demo"} if allow_demo else {"real"}):
         raise ValueError("Manifest must declare a valid build mode")
     site = load_site()
-    expected = site["validation"]["required_datasets"]
+    optional = site["validation"].get("optional_datasets", [])
+    expected = site["validation"]["required_datasets"] + optional
     datasets = manifest.get("datasets", {})
     products = {"area": {"area.geojson"}, "landcover": {"rangeland_mask.tif"}}
     if "drought" in expected:
@@ -27,13 +28,22 @@ def validate(directory=PROCESSED, allow_demo=False):
         products["rap"] = {"rap_perennial_cover.tif", "rap_tree_cover.tif", "open_grassland.tif", "grassland_blocks.geojson"}
     for key in expected:
         entry = datasets.get(key, {})
-        if entry.get("status") not in ({"ok", "demo"} if allow_demo else {"ok"}):
-            raise ValueError(f"Required dataset {key} is missing or failed")
+        allowed = {"ok", "demo"} if allow_demo else {"ok"}
+        if key in optional:
+            allowed.add("unavailable")
+        if entry.get("status") not in allowed:
+            raise ValueError(f"Dataset {key} is missing or failed")
         stamp = datetime.strptime(entry["retrieved_utc"], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
         age = (datetime.now(timezone.utc) - stamp).total_seconds() / 86400
         if not demo and (age < -1 or age > site["validation"]["max_age_days"].get(key, 400)):
             raise ValueError(f"Dataset {key} needs refreshing (age {age:.0f} days)")
         files = entry.get("files", [])
+        if entry["status"] == "unavailable":
+            if files or not entry.get("note", "").strip():
+                raise ValueError(f"Unavailable dataset {key} must have an explanation and no files")
+            if any((directory / name).exists() for name in products[key]):
+                raise ValueError(f"Unavailable dataset {key} still contains old or partial files")
+            continue
         if not files:
             raise ValueError(f"Dataset {key} must list its output files")
         if not products[key].issubset(files):

@@ -19,7 +19,7 @@ Every map and chart on this site is built from free, national, public data. No T
 #| output: asis
 names = {"area": "Example region boundary", "rap": "Vegetation cover and forage",
          "drought": "Drought conditions", "water": "Streams, ponds, and reservoirs", "fire": "Fire perimeters"}
-status = {"ok": "Retrieved", "failed": "Not retrieved", "demo": "Preview data"}
+status = {"ok": "Retrieved", "failed": "Not retrieved", "demo": "Preview data", "unavailable": "Service unavailable — omitted"}
 rows = ["| Data | Source | Last built (UTC) | Status | Notes |", "|---|---|---|---|---|"]
 for key, label in names.items():
     d = show.MANIFEST.get("datasets", {}).get(key)

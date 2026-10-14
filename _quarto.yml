@@ -8,7 +8,7 @@ project:
     - python scripts/post_render.py
 
 website:
-  site-url: "https://daearconsulting.github.io/wolakota-habitat-monitoring/"
+  site-url: "https://daearconsulting.github.io/Wolakota_bison_habitat/"
   title: "Watching the Range"
   description: "What buffalo habitat monitoring could look like, shown with public data"
   page-navigation: true

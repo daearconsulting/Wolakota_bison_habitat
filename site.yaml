@@ -47,5 +47,6 @@ landcover:
   include_classes: [52, 71]
 
 validation:
-  required_datasets: [area, landcover, rap, drought, water, fire]
+  required_datasets: [area, landcover, rap, drought, fire]
+  optional_datasets: [water]
   max_age_days: {area: 400, landcover: 400, rap: 400, drought: 21, water: 400, fire: 400}
