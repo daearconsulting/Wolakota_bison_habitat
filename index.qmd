@@ -10,10 +10,6 @@ from sitekit import show
 print(show.preview_banner())
 ```
 
-::: {.lead}
-This site shows six ways a buffalo range can be watched over time using information that is already public and free. It is a set of examples to look at, not advice and not a plan.
-:::
-
 ## Why this exists
 
 Range managers ask the same questions every year: how much grass grew, whether it will be enough for the herd, where water is short, and what drought, fire, and invasive grasses are doing to the land. Satellites and national programs now answer part of those questions every year, for every acre, at no cost.

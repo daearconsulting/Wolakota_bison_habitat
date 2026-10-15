@@ -26,7 +26,7 @@ else:
 
 Cheatgrass, Japanese brome, and similar grasses come up early, dry out early, and leave little feed for the rest of the year. They also carry fire. Native perennial grasses, which come back from their roots every year, are the backbone of a buffalo range. Watching the balance between the two is one of the clearest long-term health checks for grassland.
 
-The satellite data groups all annual grasses and broad-leaved annual plants together, including some native ones, so this is a warning sign to check, not a weed map.
+The satellite data groups all annual grasses and broad-leaved annual plants together, including some native ones, so this is a warning sign to check.
 
 ## Annual and perennial plants over time
 

@@ -1,6 +1,6 @@
 ---
 title: "Drought"
-subtitle: "Option 3 · The early warning for a short grass year"
+subtitle: "Option 3 The early warning for a short grass year"
 ---
 
 ```{python}
