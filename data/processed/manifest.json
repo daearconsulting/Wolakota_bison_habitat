@@ -4,7 +4,7 @@
       "status": "ok",
       "source": "U.S. Census Bureau TIGER/Line 2023 (AIANNH)",
       "url": "https://www2.census.gov/geo/tiger/TIGER2023/AIANNH/tl_2023_us_aiannh.zip",
-      "retrieved_utc": "2026-10-14 20:30",
+      "retrieved_utc": "2026-10-23 18:18",
       "note": "Regional extent for illustration; not a management boundary.",
       "files": [
         "area.geojson"
@@ -14,7 +14,7 @@
       "status": "ok",
       "source": "Annual NLCD 2024 (fixed-vintage mask)",
       "url": "https://www.mrlc.gov/data/annual-nlcd-land-cover-2024-conus",
-      "retrieved_utc": "2026-10-14 20:32",
+      "retrieved_utc": "2026-10-23 18:19",
       "note": "Classes 52/71; excludes crops, hay/pasture and developed land. Does not establish native species or water reliability.",
       "files": [
         "rangeland_mask.tif"
@@ -24,7 +24,7 @@
       "status": "ok",
       "source": "Rangeland Analysis Platform v3 (USDA-NRCS, BLM, Univ. of Montana)",
       "url": "https://rangelands.app/",
-      "retrieved_utc": "2026-10-14 20:33",
+      "retrieved_utc": "2026-10-23 18:19",
       "note": "Years 1986-2025; normal = 1991-2020; fixed 2024 grassland/shrubland mask; minimum valid coverage 90%",
       "files": [
         "rap_annual.csv",
@@ -39,7 +39,7 @@
       "status": "ok",
       "source": "U.S. Drought Monitor (NDMC, USDA, NOAA), county statistics",
       "url": "https://droughtmonitor.unl.edu/",
-      "retrieved_utc": "2026-10-14 20:33",
+      "retrieved_utc": "2026-10-23 18:20",
       "note": "Todd County, SD, Mellette County, SD",
       "files": [
         "drought_weekly.csv"
@@ -49,15 +49,15 @@
       "status": "unavailable",
       "source": "USGS NHDPlus High Resolution",
       "url": "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer",
-      "retrieved_utc": "2026-10-14 20:34",
-      "note": "Service request failed; water omitted and will be retried on the next refresh. HTTPError: 502 Server Error: Bad Gateway for url: https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/3/query?where=FCode+%3D+46006&outFields=%2A&f=geojson&returnGeometry=true&geometry=-101.22842366789047%2C42.99755996796573%2C-100.18%2C43.62&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&resultOffset=0&resultRecordCount=250&maxAllowableOffset=0.0003",
+      "retrieved_utc": "2026-10-23 18:20",
+      "note": "Service request failed; water omitted and will be retried on the next refresh. HTTPError: 504 Server Error: Gateway Time-out for url: https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/3/query?where=FCode+%3D+46006&outFields=%2A&f=geojson&returnGeometry=true&geometry=-101.228426%2C42.997559%2C-100.18%2C43.62&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&inSR=4326&outSR=4326&resultOffset=0&resultRecordCount=250&maxAllowableOffset=0.0003",
       "files": []
     },
     "fire": {
       "status": "ok",
       "source": "NIFC InterAgency Fire Perimeter History",
       "url": "https://data-nifc.opendata.arcgis.com/",
-      "retrieved_utc": "2026-10-14 20:34",
+      "retrieved_utc": "2026-10-23 18:20",
       "note": "0 mapped fires",
       "files": [
         "fire_perimeters.geojson"
@@ -65,8 +65,8 @@
     }
   },
   "mode": "real",
-  "eligible_acres": 907356.3912679779,
-  "eligible_region_pct": 83.67406833157982,
+  "eligible_acres": 907331.8356738072,
+  "eligible_region_pct": 83.6748820484801,
   "eligible_grid_fraction_pct": 82.43712854941668,
   "latest_rap_year": 2025
 }
