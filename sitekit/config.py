@@ -11,7 +11,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 import os
 PROCESSED = Path(os.environ.get("SITEKIT_PROCESSED", ROOT/"data"/"processed"))
-CACHE = ROOT / "data"/"cache"
+CACHE = ROOT/"data"/"cache"
 MANIFEST = PROCESSED/"manifest.json"
 
 # Equal-area projection for anything measured in acres or meters.

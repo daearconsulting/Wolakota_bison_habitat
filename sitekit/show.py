@@ -267,7 +267,7 @@ def static_map(m):
     minx, miny, maxx, maxy = area().total_bounds
     ax.set(xlim=(minx,maxx), ylim=(miny,maxy), xlabel="Longitude", ylabel="Latitude")
     ax.set_aspect(1 / np.cos(np.deg2rad((miny+maxy)/2)))
-    ax.set_title("Public-data illustration — see source and limitations on this page")
+    ax.set_title("Public-data illustration; see source and limitations on this page")
     return _static_image(fig, "Printable map of the visible thematic layers; background tiles omitted")
 
 

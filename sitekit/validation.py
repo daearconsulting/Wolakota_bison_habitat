@@ -10,7 +10,7 @@ from .config import PROCESSED, load_site, has_demo
 
 def validate(directory=PROCESSED, allow_demo=False):
     directory = Path(directory)
-    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((directory/"manifest.json").read_text(encoding="utf-8"))
     demo = has_demo(manifest)
     if demo and not allow_demo:
         raise ValueError("Synthetic data cannot be published, including mixed real/demo builds")
@@ -66,15 +66,15 @@ def validate(directory=PROCESSED, allow_demo=False):
                     raise ValueError(f"Invalid geometry: {name}")
                 if name == "area.geojson" and (frame.empty or "acres" not in frame or frame.acres.sum() <= 0):
                     raise ValueError("Study area is empty or lacks acreage")
-    if "rap" in expected and (directory / "rap_annual.csv").exists():
-        df = pd.read_csv(directory / "rap_annual.csv")
+    if "rap" in expected and (directory/"rap_annual.csv").exists():
+        df = pd.read_csv(directory/"rap_annual.csv")
         cols = ["year", "forage_total_lbs_ac", "cover_annual_grass_forb_pct", "cover_perennial_grass_forb_pct"]
         if not set(cols).issubset(df.columns) or len(df) < 15 or df.year.duplicated().any():
             raise ValueError("RAP history needs at least 15 unique years and required columns")
         if not np.isfinite(df[cols].to_numpy()).all() or (df.forage_total_lbs_ac < 0).any():
             raise ValueError("RAP history contains invalid observations")
     if "drought" in expected:
-        df = pd.read_csv(directory / "drought_weekly.csv")
+        df = pd.read_csv(directory/"drought_weekly.csv")
         validate_drought(df)
         if not demo and (pd.Timestamp.now().normalize() - pd.to_datetime(df.date).max()).days > 21:
             raise ValueError("Drought observations are older than 21 days")

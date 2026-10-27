@@ -21,7 +21,7 @@ def _smooth_field(shape, scale=25):
     """Smooth random field (0-1) built from low-frequency noise."""
     small = RNG.random((max(2, shape[0] // scale), max(2, shape[1] // scale)))
     from scipy.ndimage import gaussian_filter, zoom
-    big = zoom(small, (shape[0] / small.shape[0], shape[1] / small.shape[1]), order=3)
+    big = zoom(small, (shape[0]/small.shape[0], shape[1]/small.shape[1]), order=3)
     big = gaussian_filter(big[: shape[0], : shape[1]], 3)
     return (big - big.min()) / (big.max() - big.min())
 
@@ -61,15 +61,15 @@ def build_demo(site: dict, manifest: dict) -> None:
     t, shape, (dy, dx) = make_grid(bounds, site["rap"]["map_resolution_m"])
     inside = area_mask(area, t, shape)
     base = _smooth_field(shape)
-    write_tif(PROCESSED / "rap_perennial_cover.tif", np.where(inside, 25 + 50 * base, np.nan), t)
-    write_tif(PROCESSED / "rap_annual_cover.tif", np.where(inside, 2 + 14 * _smooth_field(shape, 15) ** 2, np.nan), t)
-    write_tif(PROCESSED / "rap_forage.tif", np.where(inside, 500 + 1300 * base, np.nan), t)
+    write_tif(PROCESSED/"rap_perennial_cover.tif", np.where(inside, 25 + 50 * base, np.nan), t)
+    write_tif(PROCESSED/"rap_annual_cover.tif", np.where(inside, 2 + 14 * _smooth_field(shape, 15) ** 2, np.nan), t)
+    write_tif(PROCESSED/"rap_forage.tif", np.where(inside, 500 + 1300 * base, np.nan), t)
 
     ts, shape_s, _ = make_grid(bounds, site["rap"]["series_resolution_m"])
     inside_s = area_mask(area, ts, shape_s)
-    write_tif(PROCESSED / "rap_forage_anomaly.tif",
+    write_tif(PROCESSED/"rap_forage_anomaly.tif",
               np.where(inside_s, -35 + 50 * _smooth_field(shape_s, 8), np.nan), ts)
-    write_tif(PROCESSED / "rap_annual_change.tif",
+    write_tif(PROCESSED/"rap_annual_change.tif",
               np.where(inside_s, -2 + 9 * _smooth_field(shape_s, 6) ** 2, np.nan), ts)
 
     # Water: a few wandering streams and ponds
@@ -82,8 +82,8 @@ def build_demo(site: dict, manifest: dict) -> None:
     ponds = [Point(RNG.uniform(bbox[0], bbox[2]), RNG.uniform(bbox[1], bbox[3])).buffer(0.004) for _ in range(40)]
     s = gpd.clip(gpd.GeoDataFrame(geometry=streams, crs=CRS_GEO), area)
     p = gpd.clip(gpd.GeoDataFrame(geometry=ponds, crs=CRS_GEO), area)
-    s.to_file(PROCESSED / "water_streams.geojson", driver="GeoJSON")
-    p.to_file(PROCESSED / "water_bodies.geojson", driver="GeoJSON")
+    s.to_file(PROCESSED/"water_streams.geojson", driver="GeoJSON")
+    p.to_file(PROCESSED/"water_bodies.geojson", driver="GeoJSON")
     from rasterio.features import rasterize
     from scipy.ndimage import distance_transform_edt
     water = rasterize([(g, 1) for g in list(s.geometry) + list(p.geometry)], out_shape=shape,
@@ -108,7 +108,7 @@ def build_demo(site: dict, manifest: dict) -> None:
         df = pd.DataFrame({"date": dates, **cats})
         df["county"] = county
         frames.append(df)
-    pd.concat(frames).to_csv(PROCESSED / "drought_weekly.csv", index=False)
+    pd.concat(frames).to_csv(PROCESSED/"drought_weekly.csv", index=False)
 
     # Fire: a handful of perimeters
     fires = []
@@ -118,7 +118,7 @@ def build_demo(site: dict, manifest: dict) -> None:
     f = gpd.clip(gpd.GeoDataFrame(fires, crs=CRS_GEO), area)
     f["acres"] = f.to_crs(CRS_AREA).area / 4046.86
     f["acres_in_area"] = f["acres"]
-    f.to_file(PROCESSED / "fire_perimeters.geojson", driver="GeoJSON")
+    f.to_file(PROCESSED/"fire_perimeters.geojson", driver="GeoJSON")
 
     for key in ["area", "rap", "drought", "water", "fire"]:
         record(manifest, key, status="demo", source="Synthetic preview data", url="",

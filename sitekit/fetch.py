@@ -68,7 +68,7 @@ def build_area(site: dict, manifest: dict) -> gpd.GeoDataFrame:
         src, url = "User-supplied boundary file", str(area["boundary_file"])
     else:
         CACHE.mkdir(parents=True, exist_ok=True)
-        cached = CACHE / "tl_2023_us_aiannh.zip"
+        cached = CACHE/"tl_2023_us_aiannh.zip"
         if not cached.exists():
             log.info("Downloading Census AIANNH boundaries ...")
             r = requests.get(TIGER_AIANNH, timeout=600)
@@ -93,7 +93,7 @@ def build_area(site: dict, manifest: dict) -> gpd.GeoDataFrame:
     gdf["acres"] = gdf.to_crs(CRS_AREA).area / 4046.86
 
     PROCESSED.mkdir(parents=True, exist_ok=True)
-    gdf.to_file(PROCESSED / "area.geojson", driver="GeoJSON")
+    gdf.to_file(PROCESSED/"area.geojson", driver="GeoJSON")
     record(manifest, "area", status="ok", source=src, url=url,
            note="Regional extent for illustration; not a management boundary.",
            files=["area.geojson"])
@@ -174,7 +174,7 @@ def latest_rap_year(first_guess: int | None = None) -> int:
 
 
 def build_rap(site: dict, area: gpd.GeoDataFrame, manifest: dict) -> None:
-    """Yearly vegetation summary + a few maps for the pages.
+    """Yearly vegetation summary and a few maps for the pages.
 
     Products:
       rap_annual.csv           area-average cover (%) and forage (lbs/acre), every year
@@ -250,9 +250,9 @@ def build_rap(site: dict, area: gpd.GeoDataFrame, manifest: dict) -> None:
     biomass = _read_rap("vegetation-biomass", y_last, 2, bounds, shape_m)
     if cover is None or biomass is None:
         raise RuntimeError("Latest-year detailed RAP maps could not be read")
-    write_tif(PROCESSED / "rap_perennial_cover.tif", np.where(inside_m, cover[3], np.nan), t_m)
-    write_tif(PROCESSED / "rap_annual_cover.tif", np.where(inside_m, cover[0], np.nan), t_m)
-    write_tif(PROCESSED / "rap_forage.tif", np.where(inside_m, biomass[0] + biomass[1], np.nan), t_m)
+    write_tif(PROCESSED/"rap_perennial_cover.tif", np.where(inside_m, cover[3], np.nan), t_m)
+    write_tif(PROCESSED/"rap_annual_cover.tif", np.where(inside_m, cover[0], np.nan), t_m)
+    write_tif(PROCESSED/"rap_forage.tif", np.where(inside_m, biomass[0] + biomass[1], np.nan), t_m)
 
     record(manifest, "rap", status="ok",
            source="Rangeland Analysis Platform v3 (USDA-NRCS, BLM, Univ. of Montana)",
@@ -302,7 +302,7 @@ def build_drought(site: dict, manifest: dict, start_year: int = 2000) -> None:
             raise ValueError("At least one year of drought history is required")
         frames.append(out)
     weekly = pd.concat(frames).sort_values(["county", "date"])
-    weekly.to_csv(PROCESSED / "drought_weekly.csv", index=False)
+    weekly.to_csv(PROCESSED/"drought_weekly.csv", index=False)
     record(manifest, "drought", status="ok",
            source="U.S. Drought Monitor (NDMC, USDA, NOAA), county statistics",
            url="https://droughtmonitor.unl.edu/", note=", ".join(site["drought_counties"].values()),
@@ -399,7 +399,7 @@ def build_fire(area: gpd.GeoDataFrame, manifest: dict) -> None:
     if "name" not in fires:
         fires["name"] = "Unnamed"
     fires["acres_in_area"] = fires.to_crs(CRS_AREA).area / 4046.86
-    fires.to_file(PROCESSED / "fire_perimeters.geojson", driver="GeoJSON")
+    fires.to_file(PROCESSED/"fire_perimeters.geojson", driver="GeoJSON")
     record(manifest, "fire", status="ok", source="NIFC InterAgency Fire Perimeter History",
            url="https://data-nifc.opendata.arcgis.com/", note=f"{len(fires):,} mapped fires",
            files=["fire_perimeters.geojson"])

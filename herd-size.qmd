@@ -19,10 +19,10 @@ else:
 ```
 
 ::: {.lead}
-The same acres can feed very different numbers of animals from one year to the next, because the amount of grass that grows swings with rain. The calculator below shows how big that swing is, using this region's own yearly forage record.
+The same acres can feed very different numbers of animals from one year to the next, because the amount of grass that grows increases with more rain. The calculator below shows how big that swing is, using this region's own yearly forage record.
 :::
 
-This is arithmetic for discussion, not a stocking recommendation. Real herd planning also weighs pasture rotation, water, winter feed, wildlife, cultural priorities, and the knowledge of the people who work the land.
+This is not a stocking recommendation, it's just there for discussion. Real herd planning also weighs pasture rotation, water, winter feed, wildlife, cultural priorities, and the knowledge of the people who work the land.
 
 ::: {.interactive-calculator}
 

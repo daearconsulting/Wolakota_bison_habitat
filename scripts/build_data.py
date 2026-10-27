@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Build every data product the website shows.
 
 Usage (from the project folder, with the environment active):
@@ -10,7 +12,6 @@ Each step is independent. Essential data failures block publication. Temporary
 USGS water outages are recorded as "unavailable" and omitted; other validated
 real datasets can publish. Processing errors remain fatal.
 """
-from __future__ import annotations
 
 import argparse
 import logging
@@ -75,7 +76,7 @@ def main() -> int:
             if name == "water" and outage:
                 # An unavailable external service must never reuse old/demo water products.
                 for filename in ("water_streams.geojson", "water_bodies.geojson", "water_distance_km.tif"):
-                    (PROCESSED / filename).unlink(missing_ok=True)
+                    (PROCESSED/filename).unlink(missing_ok=True)
                 record(manifest, name, status="unavailable", source="USGS NHDPlus High Resolution",
                        url="https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer",
                        note=f"Service request failed; water omitted and will be retried on the next refresh. {type(exc).__name__}: {exc}")
