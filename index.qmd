@@ -24,40 +24,40 @@ if show.available("area") and show.available("rap"):
     s = show.rap_series()
     yr = int(s["year"].max())
     print(f"""
-    ::: {{.facts}}
-    ::: {{.fact}}
-    ::: {{.num}}
-    {(f'{acres/1e6:.1f} million' if acres >= 1e6 else f'{acres/1000:,.0f}k')}
-    :::
-    ::: {{.lbl}}
-    acres in the example region
-    :::
-    :::
-    ::: {{.fact}}
-    ::: {{.num}}
-    {int(s['year'].min())}–{yr}
-    :::
-    ::: {{.lbl}}
-    years of yearly grass records
-    :::
-    :::
-    ::: {{.fact}}
-    ::: {{.num}}
-    6
-    :::
-    ::: {{.lbl}}
-    monitoring options shown
-    :::
-    :::
-    ::: {{.fact}}
-    ::: {{.num}}
-    $0
-    :::
-    ::: {{.lbl}}
-    cost of the public data used
-    :::
-    :::
-    :::
+::: {{.facts}}
+::: {{.fact}}
+::: {{.num}}
+{(f'{acres/1e6:.1f} million' if acres >= 1e6 else f'{acres/1000:,.0f}k')}
+:::
+::: {{.lbl}}
+acres in the example region
+:::
+:::
+::: {{.fact}}
+::: {{.num}}
+{int(s['year'].min())}–{yr}
+:::
+::: {{.lbl}}
+years of yearly grass records
+:::
+:::
+::: {{.fact}}
+::: {{.num}}
+6
+:::
+::: {{.lbl}}
+monitoring options shown
+:::
+:::
+::: {{.fact}}
+::: {{.num}}
+$0
+:::
+::: {{.lbl}}
+cost of the public data used
+:::
+:::
+:::
     """)
 else:
     print(show.missing_note("regional vegetation"))
