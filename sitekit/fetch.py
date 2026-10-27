@@ -12,10 +12,14 @@ Sources (all public, no logins):
   * Rangeland Analysis Platform (RAP) v3 . yearly vegetation cover and forage (biomass)
   * U.S. Drought Monitor data services .... weekly drought by county
   * USGS NHDPlus High Resolution .......... streams, ponds, and reservoirs
-  * NIFC InterAgency Fire Perimeter History  past fire perimeters
+  * USGS/USFS Monitoring Trends in Burn Severity (MTBS)  large-fire boundaries
 """
 
 import io
+import hashlib
+import json
+import time
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import tempfile
 import zipfile
@@ -48,8 +52,8 @@ USDM_COUNTY = ("https://usdmdataservices.unl.edu/api/CountyStatistics/"
                "GetDroughtSeverityStatisticsByAreaPercent")
 NHD_FLOWLINES = "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/3/query"
 NHD_WATERBODIES = "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/9/query"
-NIFC_FIRES = ("https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
-              "InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0/query")
+MTBS_FIRES = ("https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/"
+              "EDW_MTBS_v1/FeatureServer/0/query")
 
 # NHD feature codes: 46006 = perennial stream. Intermittent streams (46003) are
 # left out of "distance to water" because they cannot be counted on in late summer.
@@ -341,6 +345,67 @@ def _arcgis_query(url: str, bounds, where: str = "1=1", generalize_deg: float | 
     return pd.concat(frames, ignore_index=True)
 
 
+
+def _nhd_query(url: str, bounds, where: str = "1=1") -> gpd.GeoDataFrame:
+    """Query small spatial tiles for IDs, then fetch bounded batches of geometry.
+
+    Large envelope/geometry queries can time out even when the service is up.
+    IDs are deduplicated across tiles, and every requested ID must be returned.
+    """
+    def get(params):
+        cache_dir = CACHE / "nhd"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        key = hashlib.sha256(json.dumps([url, params], sort_keys=True).encode()).hexdigest()
+        cached = cache_dir / (key + ".json")
+        if cached.exists() and time.time() - cached.stat().st_mtime < 86400:
+            return json.loads(cached.read_text(encoding="utf-8"))
+        for attempt in range(2):
+            try:
+                response = requests.get(url, params={"f": "json", **params}, timeout=60)
+                response.raise_for_status()
+                payload = response.json()
+                if payload.get("error"):
+                    raise RuntimeError(payload["error"])
+                cached.write_text(json.dumps(payload), encoding="utf-8")
+                return payload
+            except (requests.Timeout, requests.ConnectionError, requests.HTTPError):
+                if attempt:
+                    raise
+
+    west, south, east, north = bounds
+    xs, ys = np.linspace(west, east, 5), np.linspace(south, north, 5)
+    tiles = [(xs[i], ys[j], xs[i+1], ys[j+1]) for i in range(4) for j in range(4)]
+
+    def ids_for_tile(tile):
+        payload = get({"where": where, "geometry": ",".join(map(str, tile)),
+                       "geometryType": "esriGeometryEnvelope", "spatialRel": "esriSpatialRelIntersects",
+                       "inSR": 4326, "returnIdsOnly": "true"})
+        if "objectIds" not in payload or payload.get("exceededTransferLimit"):
+            raise ValueError("Incomplete NHD object-ID response")
+        return payload["objectIds"] or []
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        ids = sorted({oid for group in pool.map(ids_for_tile, tiles) for oid in group})
+    log.info("NHD %s: %s unique features", url, len(ids))
+
+    def features_for_ids(batch):
+        # Geometry queries by ID avoid repeating the expensive spatial filter.
+        payload = get({"f": "geojson", "objectIds": ",".join(map(str, batch)),
+                       "outFields": "*", "returnGeometry": "true", "outSR": 4326,
+                       "maxAllowableOffset": 0.0003})
+        features = payload.get("features")
+        if features is None or len(features) != len(batch) or payload.get("exceededTransferLimit"):
+            raise ValueError("Incomplete NHD geometry response")
+        return features
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        features = [feature for group in pool.map(features_for_ids,
+                    [ids[i:i+100] for i in range(0, len(ids), 100)]) for feature in group]
+    if not features:
+        return gpd.GeoDataFrame(geometry=[], crs=CRS_GEO)
+    return gpd.GeoDataFrame.from_features(features, crs=CRS_GEO)
+
+
 def build_water(site: dict, area: gpd.GeoDataFrame, manifest: dict) -> None:
     """Mapped surface water and a distance-to-water surface.
 
@@ -349,8 +414,8 @@ def build_water(site: dict, area: gpd.GeoDataFrame, manifest: dict) -> None:
     exactly the kind of local knowledge a range team would add.
     """
     bounds = tuple(area.total_bounds)
-    flow = _arcgis_query(NHD_FLOWLINES, bounds, where="FCode = 46006", generalize_deg=0.0003)
-    bodies = _arcgis_query(NHD_WATERBODIES, bounds, generalize_deg=0.0003)
+    flow = _nhd_query(NHD_FLOWLINES, bounds, where="FCode = 46006")
+    bodies = _nhd_query(NHD_WATERBODIES, bounds)
 
     fcode = _find(flow.columns, "FCode", "FCODE")
     if len(flow) and not set(flow.geom_type).issubset({"LineString", "MultiLineString"}):
@@ -360,8 +425,15 @@ def build_water(site: dict, area: gpd.GeoDataFrame, manifest: dict) -> None:
     if len(flow) and not fcode:
         raise ValueError("Flowline service lacks FCode; refusing to include seasonal streams")
     perennial = flow[pd.to_numeric(flow[fcode], errors="coerce").isin(PERENNIAL_FCODES)] if fcode else flow
-    perennial = gpd.clip(perennial[["geometry"]], area)
-    bodies = gpd.clip(bodies[["geometry"]], area)
+    perennial = perennial[["geometry"]].copy()
+    bodies = bodies[["geometry"]].copy()
+    perennial.geometry = perennial.geometry.map(make_valid)
+    bodies.geometry = bodies.geometry.map(make_valid)
+    # Repair can expose collapsed line fragments alongside polygon components.
+    bodies = bodies.explode(index_parts=False, ignore_index=True)
+    bodies = bodies[bodies.geom_type.isin(["Polygon", "MultiPolygon"])].copy()
+    perennial = gpd.clip(perennial, area)
+    bodies = gpd.clip(bodies, area)
     perennial.to_file(PROCESSED/"water_streams.geojson", driver="GeoJSON")
     bodies.to_file(PROCESSED/"water_bodies.geojson", driver="GeoJSON")
 
@@ -385,22 +457,31 @@ def build_water(site: dict, area: gpd.GeoDataFrame, manifest: dict) -> None:
 
 
 def build_fire(area: gpd.GeoDataFrame, manifest: dict) -> None:
-    """Past fire perimeters (all years the service holds) inside the area."""
-    fires = _arcgis_query(NIFC_FIRES, tuple(area.total_bounds), generalize_deg=0.0003)
+    """Satellite-mapped large-fire boundaries from the MTBS historical record."""
+    fires = _arcgis_query(MTBS_FIRES, tuple(area.total_bounds), generalize_deg=0.0003)
     keep = {}
-    for want, names in {"year": ("FIRE_YEAR", "FIRE_YEAR_INT"), "name": ("INCIDENT", "FIRE_NAME"),
-                        "acres": ("GIS_ACRES",)}.items():
+    for want, names in {"year": ("YEAR", "FIRE_YEAR_INT", "FIRE_YEAR"), "name": ("INCIDENT", "FIRE_NAME"),
+                        "acres": ("ACRES", "GIS_ACRES"), "fire_id": ("FIRE_ID",), "fire_type": ("FIRE_TYPE",)}.items():
         col = _find(fires.columns, *names)
         if col:
             keep[col] = want
     fires = fires[list(keep) + ["geometry"]].rename(columns=keep)
+    if len(fires):
+        if not set(fires.geom_type).issubset({"Polygon", "MultiPolygon"}):
+            raise ValueError("MTBS fire boundaries must be polygons")
+        if "year" not in fires or "fire_id" not in fires:
+            raise ValueError("MTBS response lacks fire IDs or years")
+        fires = fires.drop_duplicates("fire_id").copy()
+        fires.geometry = fires.geometry.map(make_valid)
     fires = gpd.clip(fires, area)
+    fires = fires[~fires.geometry.is_empty].copy()
     fires["year"] = pd.to_numeric(fires.get("year", pd.Series(index=fires.index, dtype=float)), errors="coerce")
     if "name" not in fires:
         fires["name"] = "Unnamed"
     fires["acres_in_area"] = fires.to_crs(CRS_AREA).area / 4046.86
     fires.to_file(PROCESSED/"fire_perimeters.geojson", driver="GeoJSON")
-    record(manifest, "fire", status="ok", source="NIFC InterAgency Fire Perimeter History",
-           url="https://data-nifc.opendata.arcgis.com/", note=f"{len(fires):,} mapped fires",
+    record(manifest, "fire", status="ok", source="USGS/USFS Monitoring Trends in Burn Severity (MTBS)",
+           url="https://www.mtbs.gov/",
+           note=f"{len(fires):,} mapped large fires; satellite-mapped record from 1984; generally at least 1,000 acres in the western U.S.; small fires omitted",
            files=["fire_perimeters.geojson"])
 

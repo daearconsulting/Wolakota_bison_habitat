@@ -18,7 +18,7 @@ if ok:
     yrs = f["year"].dropna().astype(int) if "year" in f else []
     span = f"{yrs.min()}–{yrs.max()}" if len(yrs) else "the record"
     print(f"""::: {{.lead}}
-Public records map **{len(f):,} fires** in the region over {span}, together covering about {total:,.0f} acres ({share:.1f}% of the area, counting reburned ground more than once).
+Satellite records map **{len(f):,} large fires** in the region over {span}, together covering about {total:,.0f} acres ({share:.1f}% of the area, counting reburned ground more than once).
 :::
 """)
 else:
@@ -30,19 +30,21 @@ Fire and grazing shaped the Great Plains together. Buffalo are drawn to the fres
 ## Mapped fires
 
 ```{python}
-if ok and len(f):
+if ok:
     m = show.base_map()
+if ok and len(f):
     f["acres_label"] = f["acres_in_area"].round(0)
     if "name" not in f:
         f["name"] = "Unnamed"
     f[["year", "name", "acres_label", "geometry"]].to_file(PROCESSED / "_fire_display.geojson", driver="GeoJSON")
     show.vector_layer(m, "_fire_display.geojson", "Fire perimeters", show.FIRE, weight=1, fill=True,
                       tooltip=["name", "year", "acres_label"], aliases=["Fire", "Year", "Acres"])
+if ok:
     display(show.finish(m))
 ```
 
 ::: {.map-caption}
-Data: National Interagency Fire Center, InterAgency Fire Perimeter History. Small fires and many planned burns are often not mapped, so this is a partial record. Hover over a fire for details.
+Data: USGS and USDA Forest Service, [Monitoring Trends in Burn Severity (MTBS)](https://www.mtbs.gov/). The satellite-mapped record starts in 1984 and generally includes fires of at least 1,000 acres in the western United States. Smaller fires and many planned burns are omitted, and recent fires appear after processing. This is a partial record, not evidence that other ground has never burned. Hover over a fire for details.
 :::
 
 ```{python}

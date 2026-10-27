@@ -38,8 +38,10 @@ if ok:
         fig.add_scatter(x=d.date, y=d[k], stackgroup="one", mode="none", name=show.DROUGHT_LABEL[k],
                         fillcolor=show.DROUGHT[k], hovertemplate="%{x|%b %d, %Y}: %{y:.0f}%<extra>" + show.DROUGHT_LABEL[k] + "</extra>")
     fig.update_layout(yaxis=dict(title="Mean county area share (%)", range=[0, 100]),
-                      legend=dict(traceorder="reversed"))
-    show.show(fig, 400)
+                      legend=dict(traceorder="reversed", orientation="h", x=0, xanchor="left",
+                                  y=1.04, yanchor="bottom", entrywidth=190, font=dict(size=13)),
+                      margin=dict(t=150))
+    show.show(fig, 510)
 ```
 
 ```{python}
@@ -58,8 +60,10 @@ if ok:
         fig.add_bar(x=recent.date, y=recent[k], name=show.DROUGHT_LABEL[k], marker_color=show.DROUGHT[k],
                     hovertemplate="%{x|%b %d}: %{y:.0f}%<extra>" + show.DROUGHT_LABEL[k] + "</extra>")
     fig.update_layout(barmode="stack", bargap=0.05, yaxis=dict(title="Mean county area share (%)", range=[0, 100]),
-                      legend=dict(traceorder="reversed"))
-    show.show(fig, 320)
+                      legend=dict(traceorder="reversed", orientation="h", x=0, xanchor="left",
+                                  y=1.04, yanchor="bottom", entrywidth=190, font=dict(size=13)),
+                      margin=dict(t=150))
+    show.show(fig, 430)
 ```
 
 ## What it tells a range manager

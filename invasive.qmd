@@ -37,8 +37,11 @@ if ok:
                     line=dict(color=show.GRASS, width=3), hovertemplate="%{x}: %{y:.1f}%<extra>Perennial</extra>")
     fig.add_scatter(x=s.year, y=s.cover_annual_grass_forb_pct, name="Annual grasses and forbs",
                     line=dict(color=show.EARTH, width=3), hovertemplate="%{x}: %{y:.1f}%<extra>Annual</extra>")
-    fig.update_layout(yaxis_title="Share of the ground covered (%)", yaxis_rangemode="tozero")
-    show.show(fig, 360)
+    fig.update_layout(yaxis_title="Share of the ground covered (%)", yaxis_rangemode="tozero",
+                      legend=dict(orientation="v", x=0, xanchor="left",
+                                  y=1.04, yanchor="bottom", font=dict(family="Arial, sans-serif", size=13)),
+                      margin=dict(t=85))
+    show.show(fig, 405)
 ```
 
 ## Where annual grasses have changed

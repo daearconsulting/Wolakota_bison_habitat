@@ -40,7 +40,7 @@ The region shown is a public, landscape-scale area around Todd and Mellette coun
 - **Forage and plant cover** come from the Rangeland Analysis Platform, which combines Landsat satellite images with thousands of field plots. Yearly estimates are good at showing patterns and trends. Single values for a single spot can be off.
 - **Drought** comes from the U.S. Drought Monitor, a weekly expert judgment at the county scale.
 - **Water** comes from the USGS national stream and pond map. It misses wells, tanks, pipelines, most springs, and whether a pond holds water in a dry year.
-- **Fire** comes from the National Interagency Fire Center. Small fires and many planned burns are not mapped.
+- **Fire** comes from the USGS/USDA Forest Service Monitoring Trends in Burn Severity (MTBS) satellite record, beginning in 1984. It generally maps fires of at least 1,000 acres in the western U.S.; small fires and many planned burns are omitted.
 
 ## Data sovereignty
 

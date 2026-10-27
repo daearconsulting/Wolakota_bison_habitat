@@ -11,7 +11,7 @@ A small website that shows what buffalo habitat monitoring *could* look like, us
 | Path | What it is |
 |---|---|
 | `*.qmd` | The website pages, written as plain text with small code blocks (hidden on the site). Edit the words here. |
-| `site.yaml` | The one settings file: area, counties, and example values. Change the area here, never in code. |
+| `site.yaml` | The one settings file: area, counties, and example values. Change the area here, not in code. |
 | `sitekit/` | Python helpers. `fetch.py` downloads data; `show.py` draws maps and charts; `demo.py` makes fake preview data. |
 | `scripts/build_data.py` | Downloads the public data and writes small files to `data/processed/`. |
 | `scripts/check_data.py` | Stops a publish if the data is missing or is preview data. |
@@ -25,7 +25,7 @@ A small website that shows what buffalo habitat monitoring *could* look like, us
 | How much grass grew, Forage and herd size, Invasive annual grasses | Yearly plant cover and forage, 1986 to present | Rangeland Analysis Platform v3 |
 | Drought | Weekly drought category by county | U.S. Drought Monitor data services |
 | Water across the land | Year-round streams, ponds, reservoirs | USGS NHDPlus High Resolution |
-| Fire history | Past fire perimeters | NIFC InterAgency Fire Perimeter History |
+| Fire history | Satellite-mapped large-fire boundaries since 1984 | USGS/USFS Monitoring Trends in Burn Severity (MTBS) |
 | All maps | Example region boundary | U.S. Census TIGER/Line AIANNH 2023 |
 
 No Tribal, herd, or ranch data is used or stored anywhere in this project.
@@ -76,7 +76,7 @@ Then rebuild the data.
 ## Things to verify before sharing widely
 
 - **Live service validation: see VALIDATION.md.** The code has been exercised with live samples; see VALIDATION.md for the full-build status and remaining limitations.
-- **Service details.** The RAP file naming (`.../rap-vegetation-biomass/v3/vegetation-biomass-v3-<year>.tif`) follows the RAP team's documented pattern for cover files; the biomass path and both product band layouts have now been checked against live samples. The Drought Monitor CSV column names and the NIFC fire service address are handled flexibly, but confirm them on the first run.
+- **Service details.** The RAP file naming (`.../rap-vegetation-biomass/v3/vegetation-biomass-v3-<year>.tif`) follows the RAP team's documented pattern for cover files; the biomass path and both product band layouts have now been checked against live samples. Hydrography is fetched in small spatial tiles followed by object-ID batches to avoid large-query timeouts. Successful raw responses are cached locally for 24 hours; invalid source polygons are repaired before clipping. Fire history uses the federal MTBS feature service; the older NIFC history service returned no records for this region.
 - **Review by the right people.** Before this circulates beyond James Rattling Leaf, consider letting someone connected to Wolakota see it first, since it describes their region.
 - **License.** Apache 2.0; see LICENSE.
 
@@ -89,7 +89,7 @@ The fixed 2024 Annual NLCD mask includes classes 52 (shrub/scrub) and 71 (grassl
 
 ## Printing and PDF
 
-Use the page's Print/Save PDF button or your browser's Print command. Print styling replaces interactive maps and charts with static figures; the herd calculator includes a static starting-assumptions table. Choose “Save as PDF” in the print dialog. This is a browser-generated PDF rather than a separate LaTeX build.
+Use the page's Print/Save PDF button or your browser's Print command. Print styling replaces interactive maps and charts with static figures; the herd calculator includes a static starting-assumptions table. Choose “Save as PDF” in the print dialog. This is a browser-generated PDF.
 
 For the tested direct package versions, use `python -m pip install -r requirements.txt -c constraints.txt` after activating the environment. The workflow pins Quarto 1.8.27. Transitive dependencies are still resolved by pip; this is not a fully locked environment.
 

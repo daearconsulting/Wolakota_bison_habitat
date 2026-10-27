@@ -79,7 +79,7 @@ class WaterAndFireTests(unittest.TestCase):
         from sitekit import fetch
         area=gpd.GeoDataFrame(geometry=[box(-101,43,-100,44)],crs="EPSG:4326")
         lines=gpd.GeoDataFrame({"FCode":[46006]},geometry=[LineString([(-100.9,43.1),(-100.8,43.2)])],crs="EPSG:4326")
-        with patch.object(fetch,"_arcgis_query",return_value=lines):
+        with patch.object(fetch,"_nhd_query",return_value=lines):
             with self.assertRaisesRegex(ValueError,"polygons"):
                 fetch.build_water({"rap":{"map_resolution_m":90}},area,{})
 
@@ -144,3 +144,75 @@ class OptionalWaterTests(unittest.TestCase):
         result, manifest, _ = self.run_builder(requests.HTTPError("404 Not Found", response=response))
         self.assertEqual(result, 1)
         self.assertEqual(manifest["datasets"]["water"]["status"], "failed")
+
+
+class MapRecoveryTests(unittest.TestCase):
+    def test_tiled_hydrography_deduplicates_ids(self):
+        from sitekit import fetch
+        from unittest.mock import Mock
+        calls = []
+        def request(url, params, timeout):
+            calls.append(params)
+            response = Mock()
+            if params.get("returnIdsOnly"):
+                response.json.return_value = {"objectIds": [7, 8]}
+            else:
+                self.assertNotIn("geometry", params)
+                self.assertEqual(params["objectIds"], "7,8")
+                response.json.return_value = {"features": [
+                    {"type": "Feature", "properties": {"OBJECTID": i, "FCode": 46006},
+                     "geometry": {"type": "LineString", "coordinates": [[0, 0], [1, 1]]}}
+                    for i in [7, 8]]}
+            return response
+        with tempfile.TemporaryDirectory() as tmp, patch.object(fetch, "CACHE", Path(tmp)), patch.object(fetch.requests, "get", side_effect=request):
+            result = fetch._nhd_query("https://example.test/query", (0, 0, 1, 1))
+        self.assertEqual(len(result), 2)
+        self.assertEqual(sum(bool(c.get("returnIdsOnly")) for c in calls), 16)
+
+    def test_incomplete_hydrography_response_is_rejected(self):
+        from sitekit import fetch
+        from unittest.mock import Mock
+        response = Mock()
+        response.json.return_value = {}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(fetch, "CACHE", Path(tmp)), patch.object(fetch.requests, "get", return_value=response):
+            with self.assertRaisesRegex(ValueError, "Incomplete NHD"):
+                fetch._nhd_query("https://example.test/query", (0, 0, 1, 1))
+
+    def test_mtbs_years_deduplication_and_clipped_acreage(self):
+        from sitekit import fetch
+        import geopandas as gpd
+        from shapely.geometry import box
+        frame = gpd.GeoDataFrame({"FIRE_ID": ["a", "a"], "YEAR": [2012, 2012],
+                                  "FIRE_NAME": ["Test", "Test"]},
+                                 geometry=[box(-101,43,-100,44)]*2, crs="EPSG:4326")
+        area = gpd.GeoDataFrame(geometry=[box(-101,43,-100.5,43.5)], crs="EPSG:4326")
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = {}
+            with patch.object(fetch, "PROCESSED", Path(tmp)), patch.object(fetch, "_arcgis_query", return_value=frame):
+                fetch.build_fire(area, manifest)
+            result = gpd.read_file(Path(tmp)/"fire_perimeters.geojson")
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result.year.iloc[0], 2012)
+            self.assertEqual(result["name"].iloc[0], "Test")
+            self.assertAlmostEqual(result.acres_in_area.iloc[0], area.to_crs(fetch.CRS_AREA).area.iloc[0]/4046.86)
+            self.assertIn("MTBS", manifest["datasets"]["fire"]["source"])
+
+
+class HydrographyGeometryTests(unittest.TestCase):
+    def test_invalid_source_polygon_is_repaired_before_clipping(self):
+        from sitekit import fetch
+        import geopandas as gpd
+        import rasterio
+        from shapely.geometry import box, Polygon, LineString
+        area = gpd.GeoDataFrame(geometry=[box(-101,43,-100.9,43.1)], crs="EPSG:4326")
+        streams = gpd.GeoDataFrame({"FCode": [46006]}, geometry=[LineString([(-100.99,43.01),(-100.91,43.09)])], crs=area.crs)
+        ponds = gpd.GeoDataFrame(geometry=[Polygon([(-100.98,43.02),(-100.92,43.08),(-100.98,43.08),(-100.92,43.02),(-100.98,43.02)])], crs=area.crs)
+        self.assertFalse(ponds.geometry.is_valid.all())
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(fetch, "PROCESSED", Path(tmp)), patch.object(fetch, "_nhd_query", side_effect=[streams, ponds]):
+                fetch.build_water({"rap": {"map_resolution_m": 240}}, area, {})
+            result = gpd.read_file(Path(tmp)/"water_bodies.geojson")
+            self.assertTrue(len(result))
+            self.assertTrue(result.geometry.is_valid.all())
+            with rasterio.open(Path(tmp)/"water_distance_km.tif") as src:
+                self.assertTrue(np.isfinite(src.read(1, masked=True).compressed()).all())
